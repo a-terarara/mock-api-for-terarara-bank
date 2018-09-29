@@ -1,0 +1,225 @@
+swagger: "2.0"
+info:
+  description: "銀行APIのモックサーバ."
+  version: "1.0.0"
+  title: "bank api"
+host: "us-central1-mock-api-for-terarara-bank.cloudfunctions.net"
+basePath: "/"
+tags:
+  - name: "accounts"
+    description: "口座情報"
+  - name: "transactions"
+    description: "口座に紐づく取引情報"
+  - name: "transfer"
+    description: "振込"
+schemes:
+  - "https"
+paths:
+  /accounts:
+    get:
+      tags:
+        - "accounts"
+      summary: "口座情報の取得"
+      description: "契約に紐づく口座情報の一覧を取得します。"
+      operationId: "findAccounts"
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Account"
+        400:
+          description: "Invalid value"
+      security:
+        - bank_auth:
+            - "read:accounts"
+  /transactions:
+    get:
+      tags:
+        - "transactions"
+      summary: "取引情報の取得"
+      description: "口座情報に紐づく取引情報を取得します。"
+      operationId: "findTransactions"
+      produces:
+        - "application/json"
+      parameters:
+        - name: account_number
+          in: query
+          description: 口座番号
+          type: string
+          required: true
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Transaction"
+        400:
+          description: "Invalid value"
+        404:
+          description: "Account Not found"
+      security:
+        - bank_auth:
+            - "read:accounts"
+  /transfer:
+    post:
+      tags:
+        - "transfer"
+      summary: "振込"
+      description: |
+        振込の暫定登録を行う。  
+        振込確定をするまで振込処理は確定されない。
+      operationId: "CreateTransfer"
+      consumes:
+        - "application/x-www-form-urlencoded"
+      produces:
+        - "application/json"
+      parameters:
+        - in: body
+          name: body
+          description: 振込情報の作成.
+          schema:
+            $ref: "#/definitions/transfer"
+      responses:
+        200:
+          description: successful operation"
+          schema:
+            type: "object"
+            properties:
+              transfer_id:
+                description: 振込ID
+                type: string
+        401:
+          description: "Unauthorized"
+      security:
+        - bank_auth:
+            - "write:transactions"
+            - "read:accounts"
+    put:
+      tags:
+        - "transfer"
+      summary: "振込確定"
+      description: "振込の暫定処理を確定する。"
+      operationId: "updateTransfer"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Updated user object"
+          required: true
+          schema:
+            $ref: "#/definitions/transfer_confirm"
+      responses:
+        201:
+          description: "Transfer confirm"
+        400:
+          description: "Invalid value"
+        404:
+          description: "Transfer not found"
+      security:
+        - bank_auth:
+            - "write:transactions"
+            - "read:accounts"
+securityDefinitions:
+  bank_auth:
+    type: "oauth2"
+    authorizationUrl: "http://petstore.swagger.io/oauth/dialog"
+    flow: "implicit"
+    scopes:
+      write:transactions: "modify transactions in your account"
+      read:accounts: "read your accounts"
+definitions:
+  Account:
+    type: "object"
+    required:
+      - account_number
+      - name
+    properties:
+      account_number:
+        type: "integer"
+        format: "int64"
+        example: 12345
+      name:
+        type: "string"
+        example: "山田太郎"
+      address:
+        type: "string"
+        example: "東京都"
+      phone_number:
+        type: "string"
+        example: "010-1234-5678"
+      is_available:
+        type: "boolean"
+        description: "口座の登録状況"
+  Transaction:
+    type: "object"
+    required:
+      - "name"
+      - "photoUrls"
+    properties:
+      id:
+        type: "integer"
+        format: "int64"
+        example: 12345
+      summary:
+        type: "string"
+        description: "摘要"
+        example: "入金"
+      amount:
+        type: "integer"
+        format: "int64"
+        example: 10
+      is_available:
+        type: "boolean"
+        description: "取引状況"
+  transfer:
+    type: object
+    required:
+      - from_account_number
+      - to_bank_code
+      - to_branch_code
+      - to_account_number
+      - amount
+    properties:
+      from_account_number:
+        type: "integer"
+        format: "int64"
+        example: 12345
+        description: 振込元口座番号
+      to_bank_code:
+        type: "string"
+        minLength: 4
+        maxLength: 4
+        example: "1234"
+        description: 振込先口座番号
+      to_branch_code:
+        type: "string"
+        minLength: 3
+        maxLength: 3
+        example: "123"
+        description: 振込先口座番号
+      to_account_number:
+        type: "integer"
+        format: "int64"
+        example: 12345
+        description: 振込先口座番号
+      amount:
+        type: "integer"
+        format: "int64"
+        example: 10
+      memo:
+        type: "string"
+        example: "公共料金"
+  transfer_confirm:
+    type: object
+    required:
+      - transfer_id
+    properties:
+      transfer_id:
+        description: 振込ID
+        type: string
