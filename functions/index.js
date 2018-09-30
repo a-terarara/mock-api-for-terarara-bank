@@ -1,18 +1,22 @@
 const { https } = require("firebase-functions");
+const cors = require("cors")({ origin: true });
 
 exports.accounts = https.onRequest((req, res) => {
+  cors(req, res, () => {});
   if (!verifyAccessToken(req.headers.authorization))
     res.status(403).send("Unauthorized");
 
   fetchAccounts(res);
 });
 exports.transactions = https.onRequest((req, res) => {
+  cors(req, res, () => {});
   if (!verifyAccessToken(req.headers.authorization))
     res.status(403).send("Unauthorized");
 
   fetchTransactions(req.query.account_number, res);
 });
 exports.transfer = https.onRequest((req, res) => {
+  cors(req, res, () => {});
   if (!verifyAccessToken(req.headers.authorization))
     res.status(403).send("Unauthorized");
   if (req.method === "POST") createTransfer(req.body, res);
