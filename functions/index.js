@@ -42,7 +42,7 @@ fetchAccounts = res => {
 };
 fetchTransactions = (account_number, res) => {
   if (!account_number) return res.status(400).send({ error: "Invalid value" });
-  if (account_number !== 12345)
+  if (account_number !== "12345")
     return res.status(404).send({ error: "Account Not found" });
 
   return res.send([
