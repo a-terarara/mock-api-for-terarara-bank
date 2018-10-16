@@ -94,5 +94,5 @@ confirmTransfer = (body, res) => {
   if (transfer_id !== "12345")
     return res.status(404).send({ error: "Transfer not found" });
 
-  return res.send({ transfer_id: "12345" });
+  return res.status(201).send({message: "success"});
 };
